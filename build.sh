@@ -491,15 +491,10 @@ execute_pipeline() {
                 iso) phase_iso ;;
             esac
             
-            ((phases_run++))
-            
-            if [ $? -ne 0 ]; then
-                log_error "Phase $phase failed"
-                exit 1
-            fi
+            phases_run=$((phases_run + 1))
         else
             log_warn "Skipping phase: $phase"
-            ((phases_skipped++))
+            phases_skipped=$((phases_skipped + 1))
         fi
     done
     

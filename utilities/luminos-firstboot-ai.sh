@@ -253,16 +253,21 @@ gui_confirm_model() {
 gui_show_progress() {
     local model_name="$1"
     local model_cmd="$2"
-    
+    local result_file
+    result_file=$(mktemp) || { log_error "Failed to create temp file"; return 1; }
+    echo "1" > "$result_file"
+
     {
         echo "0"
         echo "# Downloading $model_name model..."
         
         # Run ollama pull and try to estimate progress
         if timeout 3600 runuser -u "$OLLAMA_USER" -- "$OLLAMA_BIN" pull "$model_cmd" 2>&1; then
+            echo "0" > "$result_file"
             echo "100"
             echo "# Installation complete!"
         else
+            echo "1" > "$result_file"
             echo "100"
             echo "# Installation failed!"
         fi
@@ -273,6 +278,11 @@ gui_show_progress() {
         --no-cancel \
         --auto-close \
         --width=400 2>/dev/null
+
+    local install_result
+    install_result=$(<"$result_file")
+    rm -f "$result_file"
+    return "$install_result"
 }
 
 ################################################################################

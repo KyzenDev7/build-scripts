@@ -195,7 +195,7 @@ mkdir -p "$L3/usr/share/ollama/.ollama/models/blobs"
 mkdir -p "$L4/usr/share/ollama/.ollama/models/blobs"
 
 COUNT=0
-find "${TARGET_MODEL_DIR}/blobs" -type f -print0 | while IFS= read -r -d '' file; do
+while IFS= read -r -d '' file; do
     MOD=$((COUNT % 3))
     if [ $MOD -eq 0 ]; then
         cp "$file" "$L2/usr/share/ollama/.ollama/models/blobs/"
@@ -205,7 +205,7 @@ find "${TARGET_MODEL_DIR}/blobs" -type f -print0 | while IFS= read -r -d '' file
         cp "$file" "$L4/usr/share/ollama/.ollama/models/blobs/"
     fi
     COUNT=$((COUNT + 1))
-done
+done < <(find "${TARGET_MODEL_DIR}/blobs" -type f -print0)
 
 echo "   Layer 2..."
 mksquashfs "$L2" "${ISO_DIR}/live/02-ai-part1.squashfs" -comp zstd -processors "$(nproc)"
