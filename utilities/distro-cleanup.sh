@@ -90,18 +90,16 @@ safe_truncate() {
 }
 
 safe_exec() {
-    local cmd="$*"
-    
     if [ "$DRY_RUN" = true ]; then
-        log_info "[DRY-RUN] Would execute: $cmd"
+        log_info "[DRY-RUN] Would execute: $*"
         return 0
     fi
     
     if [ "$VERBOSE" = true ]; then
-        log_info "Executing: $cmd"
+        log_info "Executing: $*"
     fi
     
-    eval "$cmd" 2>/dev/null || log_warning "Command failed: $cmd"
+    "$@" 2>/dev/null || log_warning "Command failed: $*"
 }
 
 ################################################################################
@@ -133,8 +131,8 @@ cleanup_apt() {
     log_info "=== Cleaning APT package manager ==="
     
     # Remove cached packages
-    safe_exec "apt-get clean"
-    safe_exec "apt-get autoclean"
+    safe_exec apt-get clean
+    safe_exec apt-get autoclean
     
     # Remove package lists
     safe_rm "/var/lib/apt/lists/*" "(package lists)"
@@ -190,8 +188,8 @@ cleanup_logs() {
     
     # Clean systemd journal
     if command -v journalctl &> /dev/null; then
-        safe_exec "journalctl --vacuum=time=1d"
-        safe_exec "journalctl --vacuum=size=1M"
+        safe_exec journalctl --vacuum=time=1d
+        safe_exec journalctl --vacuum=size=1M
     fi
     
     log_success "Logs cleaned"
@@ -336,13 +334,13 @@ cleanup_package_manager_database() {
     log_info "=== Cleaning package database ==="
     
     # APT
-    safe_exec "apt-get -y purge --auto-remove" || true
+    safe_exec apt-get -y purge --auto-remove || true
     
     # DNF/YUM (if present)
     if command -v dnf &> /dev/null; then
-        safe_exec "dnf clean all" || true
+        safe_exec dnf clean all || true
     elif command -v yum &> /dev/null; then
-        safe_exec "yum clean all" || true
+        safe_exec yum clean all || true
     fi
     
     log_success "Package database cleaned"

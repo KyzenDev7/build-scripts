@@ -259,7 +259,7 @@ gui_show_progress() {
         echo "# Downloading $model_name model..."
         
         # Run ollama pull and try to estimate progress
-        if timeout 3600 su - "$OLLAMA_USER" -s /bin/bash -c "$OLLAMA_BIN pull $model_cmd" 2>&1; then
+        if timeout 3600 runuser -u "$OLLAMA_USER" -- "$OLLAMA_BIN" pull "$model_cmd" 2>&1; then
             echo "100"
             echo "# Installation complete!"
         else
@@ -299,7 +299,7 @@ install_model() {
     local attempt=0
     
     log_info "Waiting for Ollama to be ready..."
-    while ! su - "$OLLAMA_USER" -s /bin/bash -c "$OLLAMA_BIN list" &>/dev/null; do
+    while ! runuser -u "$OLLAMA_USER" -- "$OLLAMA_BIN" list &>/dev/null; do
         attempt=$((attempt + 1))
         if [ $attempt -ge $max_retries ]; then
             log_error "Ollama service failed to start"
@@ -314,7 +314,7 @@ install_model() {
     # Pull the model
     log_info "Pulling $model_name model (this may take 5-15 minutes)..."
     
-    if su - "$OLLAMA_USER" -s /bin/bash -c "$OLLAMA_BIN pull $model_cmd"; then
+    if runuser -u "$OLLAMA_USER" -- "$OLLAMA_BIN" pull "$model_cmd"; then
         log_success "Model installed: $model_name"
         return 0
     else

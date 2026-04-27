@@ -54,6 +54,27 @@ apt-get install -y debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64
     if [ "$MODEL_FOUND" = false ]; then
         echo "--> Downloading models..."
         curl -fL "https://github.com/ollama/ollama/releases/download/v0.1.32/ollama-linux-amd64" -o "${AI_BUILD_DIR}/ollama"
+        
+        echo "--> Verifying Ollama binary checksum..."
+        SHA256FILE=$(mktemp)
+        if curl -fsSL "https://github.com/ollama/ollama/releases/download/v0.1.32/sha256sum.txt" -o "$SHA256FILE" 2>/dev/null; then
+            if grep -q "ollama-linux-amd64" "$SHA256FILE"; then
+                EXPECTED_HASH=$(grep "ollama-linux-amd64" "$SHA256FILE" | awk '{print $1}')
+                ACTUAL_HASH=$(sha256sum "${AI_BUILD_DIR}/ollama" | awk '{print $1}')
+                if [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
+                    echo "ERROR: Ollama binary checksum mismatch! Expected: $EXPECTED_HASH  Got: $ACTUAL_HASH"
+                    rm -f "${AI_BUILD_DIR}/ollama" "$SHA256FILE"
+                    exit 1
+                fi
+                echo "--> Ollama checksum verified"
+            else
+                echo "WARNING: ollama-linux-amd64 entry not found in sha256sum.txt — skipping verification"
+            fi
+        else
+            echo "WARNING: Could not download sha256sum.txt — skipping checksum verification"
+        fi
+        rm -f "$SHA256FILE"
+        
         chmod +x "${AI_BUILD_DIR}/ollama"
         export HOME="${AI_BUILD_DIR}"
         "${AI_BUILD_DIR}/ollama" serve > "${AI_BUILD_DIR}/server.log" 2>&1 &
@@ -96,6 +117,26 @@ mkdir -p "${CHROOT_DIR}/usr/share/wallpapers/luminos"
 cp "${BASE_DIR}/assets/"* "${CHROOT_DIR}/usr/share/wallpapers/luminos/"
 if [ ! -f "${AI_BUILD_DIR}/ollama" ]; then
     curl -fL "https://github.com/ollama/ollama/releases/download/v0.1.32/ollama-linux-amd64" -o "${AI_BUILD_DIR}/ollama"
+    
+    echo "--> Verifying Ollama binary checksum..."
+    SHA256FILE=$(mktemp)
+    if curl -fsSL "https://github.com/ollama/ollama/releases/download/v0.1.32/sha256sum.txt" -o "$SHA256FILE" 2>/dev/null; then
+        if grep -q "ollama-linux-amd64" "$SHA256FILE"; then
+            EXPECTED_HASH=$(grep "ollama-linux-amd64" "$SHA256FILE" | awk '{print $1}')
+            ACTUAL_HASH=$(sha256sum "${AI_BUILD_DIR}/ollama" | awk '{print $1}')
+            if [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
+                echo "ERROR: Ollama binary checksum mismatch! Expected: $EXPECTED_HASH  Got: $ACTUAL_HASH"
+                rm -f "${AI_BUILD_DIR}/ollama" "$SHA256FILE"
+                exit 1
+            fi
+            echo "--> Ollama checksum verified"
+        else
+            echo "WARNING: ollama-linux-amd64 entry not found in sha256sum.txt — skipping verification"
+        fi
+    else
+        echo "WARNING: Could not download sha256sum.txt — skipping checksum verification"
+    fi
+    rm -f "$SHA256FILE"
     chmod +x "${AI_BUILD_DIR}/ollama"
 fi
 cp "${AI_BUILD_DIR}/ollama" "${CHROOT_DIR}/usr/local/bin/"

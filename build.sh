@@ -294,6 +294,29 @@ phase_ai() {
         log_info "Downloading Ollama binary..."
         curl -fL "https://github.com/ollama/ollama/releases/download/${OLLAMA_VERSION}/ollama-linux-amd64" \
             -o "$OLLAMA_BINARY" 2>&1 | tee -a "${LOGS_DIR}/ollama-download.log"
+        
+        log_info "Verifying Ollama binary checksum..."
+        local sha256file
+        sha256file=$(mktemp)
+        if curl -fsSL "https://github.com/ollama/ollama/releases/download/${OLLAMA_VERSION}/sha256sum.txt" \
+                -o "$sha256file" 2>/dev/null; then
+            if grep -q "ollama-linux-amd64" "$sha256file"; then
+                local expected_hash actual_hash
+                expected_hash=$(grep "ollama-linux-amd64" "$sha256file" | awk '{print $1}')
+                actual_hash=$(sha256sum "$OLLAMA_BINARY" | awk '{print $1}')
+                if [ "$expected_hash" != "$actual_hash" ]; then
+                    log_error "Ollama binary checksum mismatch! Expected: $expected_hash  Got: $actual_hash"
+                    rm -f "$OLLAMA_BINARY" "$sha256file"
+                    exit 1
+                fi
+                log_success "Ollama checksum verified"
+            else
+                log_warn "ollama-linux-amd64 entry not found in sha256sum.txt — skipping verification"
+            fi
+        else
+            log_warn "Could not download sha256sum.txt — skipping checksum verification"
+        fi
+        rm -f "$sha256file"
         chmod +x "$OLLAMA_BINARY"
     else
         log_info "Using cached Ollama binary"

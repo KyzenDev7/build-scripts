@@ -34,7 +34,7 @@ User=ollama
 Group=ollama
 WorkingDirectory=/usr/share/ollama
 
-Environment="OLLAMA_HOST=0.0.0.0:11434"
+Environment="OLLAMA_HOST=127.0.0.1:11434"
 Environment="OLLAMA_MODELS=/usr/share/ollama/.ollama/models"
 Environment="OLLAMA_NUM_PARALLEL=4"
 Environment="OLLAMA_MAX_LOADED_MODELS=1"
