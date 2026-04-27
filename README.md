@@ -17,7 +17,7 @@ The system integrates **Lumin**, a fully offline AI assistant powered by **Ollam
 
 ## 🚀 Vision
 
-The goal of **LuminOS** is simple:
+The goal of **os** is simple:
 
 > Build the **first truly transparent AI operating system** where AI runs **locally, securely, and privately**.
 
