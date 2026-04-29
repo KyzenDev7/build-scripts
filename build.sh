@@ -267,6 +267,10 @@ phase_desktop() {
     cp "${BASE_DIR}/phases/07-install-plymouth-theme.sh" "${CHROOT_DIR}/tmp/"
     cp "${BASE_DIR}/phases/08-install-software.sh" "${CHROOT_DIR}/tmp/"
     
+    log_info "Copying assets for Plymouth theme..."
+    mkdir -p "${CHROOT_DIR}/usr/share/wallpapers/luminos"
+    cp "${BASE_DIR}"/assets/* "${CHROOT_DIR}/usr/share/wallpapers/luminos/" 2>/dev/null || true
+    
     chmod +x "${CHROOT_DIR}/tmp/"{03,04,07,08}*.sh
     
     chroot "${CHROOT_DIR}" /tmp/03-install-desktop.sh 2>&1 | tee -a "${LOGS_DIR}/03-desktop.log"
