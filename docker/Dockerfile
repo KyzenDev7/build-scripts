@@ -19,7 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dosfstools \
     rsync \
     sudo \
-    && (apt-get install -y --no-install-recommends grub-pc-bin grub-efi-amd64-bin || true) \
+    grub-pc-bin \
+    grub-efi-amd64-bin \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

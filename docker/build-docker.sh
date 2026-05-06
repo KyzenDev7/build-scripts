@@ -12,11 +12,17 @@ CHROOT_DIR="${WORK_DIR}/chroot"
 ISO_DIR="${WORK_DIR}/iso"
 AI_BUILD_DIR="${WORK_DIR}/ai_build"
 ISO_NAME="LuminOS-0.2.1-amd64.iso"
-TARGET_RUNTIME="chroot"
+TARGET_RUNTIME="${TARGET_RUNTIME:-auto}"
+
+use_proot() {
+    TARGET_RUNTIME="proot"
+}
 
 run_in_target() {
     if [ "$TARGET_RUNTIME" = "proot" ]; then
-        proot -0 -R "${CHROOT_DIR}" -b /dev -b /dev/pts -b /proc -b /sys "$@"
+        proot -0 -R "${CHROOT_DIR}" \
+            -b /dev -b /dev/pts -b /proc -b /sys -b /run -b /tmp \
+            "$@"
     else
         chroot "${CHROOT_DIR}" "$@"
     fi
@@ -37,18 +43,23 @@ echo "--> Installing dependencies..."
 apt-get update
 apt-get install -y debootstrap squashfs-tools xorriso mtools curl rsync proot
 # Grub packages may not be available on all distros, but ISO generation requires grub-mkrescue.
-apt-get install -y grub-pc-bin grub-efi-amd64-bin || true
- if ! command -v grub-mkrescue >/dev/null 2>&1; then
-     echo "ERROR: grub-mkrescue is required to generate the ISO, but it is not available."
-     echo "ERROR: Install GRUB tooling (for example grub-pc-bin and grub-efi-amd64-bin) or use a base image/distro that provides it."
-     exit 1
- fi
+apt-get install -y grub-pc-bin grub-efi-amd64-bin
+if ! command -v grub-mkrescue >/dev/null 2>&1; then
+    echo "ERROR: grub-mkrescue is required to generate the ISO, but it is not available."
+    echo "ERROR: Install GRUB tooling (for example grub-pc-bin and grub-efi-amd64-bin) or use a base image/distro that provides it."
+    exit 1
+fi
 
-if chroot / /bin/true >/dev/null 2>&1; then
-    TARGET_RUNTIME="chroot"
-else
-    TARGET_RUNTIME="proot"
-    echo "--> chroot is not available here; using proot fallback for target execution..."
+if [ "$TARGET_RUNTIME" = "auto" ]; then
+    if command -v proot >/dev/null 2>&1; then
+        use_proot
+        echo "--> Using proot for target execution (safer default)..."
+    elif chroot / /bin/true >/dev/null 2>&1; then
+        TARGET_RUNTIME="chroot"
+    else
+        echo "ERROR: Neither proot nor chroot are usable for target execution."
+        exit 1
+    fi
 fi
 
     # --- 3. PREPARE AI ---
@@ -122,11 +133,21 @@ done
 
 # --- 4. Bootstrap System ---
 echo "--> Bootstrapping Debian..."
-if [ "$TARGET_RUNTIME" = "proot" ]; then
-    debootstrap --foreign --arch=amd64 --components=main,contrib,non-free-firmware --include=linux-image-amd64,live-boot,systemd-sysv trixie "${CHROOT_DIR}" http://ftp.debian.org/debian/
-    run_in_target /debootstrap/debootstrap --second-stage
-else
-    debootstrap --arch=amd64 --components=main,contrib,non-free-firmware --include=linux-image-amd64,live-boot,systemd-sysv trixie "${CHROOT_DIR}" http://ftp.debian.org/debian/
+bootstrap_debian() {
+    if [ "$TARGET_RUNTIME" = "proot" ]; then
+        debootstrap --foreign --arch=amd64 --components=main,contrib,non-free-firmware --include=linux-image-amd64,live-boot,systemd-sysv trixie "${CHROOT_DIR}" http://ftp.debian.org/debian/
+        run_in_target /debootstrap/debootstrap --second-stage
+    else
+        debootstrap --arch=amd64 --components=main,contrib,non-free-firmware --include=linux-image-amd64,live-boot,systemd-sysv trixie "${CHROOT_DIR}" http://ftp.debian.org/debian/
+    fi
+}
+
+if ! bootstrap_debian; then
+    echo "--> Bootstrap failed with TARGET_RUNTIME=${TARGET_RUNTIME}; retrying with proot fallback..."
+    rm -rf "${CHROOT_DIR}"
+    mkdir -p "${CHROOT_DIR}"
+    use_proot
+    bootstrap_debian
 fi
 
 # --- 5. Customize ---

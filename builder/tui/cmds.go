@@ -55,9 +55,9 @@ func runChecksCmd(checks []Check) tea.Cmd {
 // This is what you actually use — returns a batch of Cmds.
 func RunChecksStream() tea.Cmd {
 	cmds := []tea.Cmd{
-		runSingleCheck("Root permissions", checkRootSync),
-		runSingleCheck("Network connectivity", checkNetworkSync),
-		runSingleCheck("Storage space (>20 GB free)", checkStorageSync),
+		runSingleCheck("Root permissions",              checkRootSync),
+		runSingleCheck("Network connectivity",          checkNetworkSync),
+		runSingleCheck("Storage space (>20 GB free)",  checkStorageSync),
 		runSingleCheck("OS compatibility (Debian/Ubuntu)", checkOSSync),
 		runSingleCheck("Required tools (debootstrap, squashfs)", checkToolsSync),
 	}
@@ -128,24 +128,19 @@ func checkToolsSync() (bool, string) {
 
 // Placeholder goroutine versions (used by runChecksCmd above)
 func checkRoot(ch chan<- CheckResultMsg) {
-	p, d := checkRootSync()
-	ch <- CheckResultMsg{Name: "Root permissions", Passed: p, Detail: d}
+	p, d := checkRootSync(); ch <- CheckResultMsg{Name: "Root permissions", Passed: p, Detail: d}
 }
 func checkNetwork(ch chan<- CheckResultMsg) {
-	p, d := checkNetworkSync()
-	ch <- CheckResultMsg{Name: "Network connectivity", Passed: p, Detail: d}
+	p, d := checkNetworkSync(); ch <- CheckResultMsg{Name: "Network connectivity", Passed: p, Detail: d}
 }
 func checkStorage(ch chan<- CheckResultMsg) {
-	p, d := checkStorageSync()
-	ch <- CheckResultMsg{Name: "Storage space (>20 GB free)", Passed: p, Detail: d}
+	p, d := checkStorageSync(); ch <- CheckResultMsg{Name: "Storage space (>20 GB free)", Passed: p, Detail: d}
 }
 func checkOS(ch chan<- CheckResultMsg) {
-	p, d := checkOSSync()
-	ch <- CheckResultMsg{Name: "OS compatibility (Debian/Ubuntu)", Passed: p, Detail: d}
+	p, d := checkOSSync(); ch <- CheckResultMsg{Name: "OS compatibility (Debian/Ubuntu)", Passed: p, Detail: d}
 }
 func checkTools(ch chan<- CheckResultMsg) {
-	p, d := checkToolsSync()
-	ch <- CheckResultMsg{Name: "Required tools (debootstrap, squashfs)", Passed: p, Detail: d}
+	p, d := checkToolsSync(); ch <- CheckResultMsg{Name: "Required tools (debootstrap, squashfs)", Passed: p, Detail: d}
 }
 
 // ── Build pipeline ────────────────────────────────────────────────────────────
@@ -278,18 +273,14 @@ func RunStageCmd(index int, stages []Stage, cfg BuildConfig, prog *tea.Program) 
 
 func getISOSize(path string) int64 {
 	info, err := os.Stat(path)
-	if err != nil {
-		return 0
-	}
+	if err != nil { return 0 }
 	return info.Size()
 }
 
 func computeSHA256(path string) string {
 	cmd := exec.Command("sha256sum", path)
 	out, err := cmd.Output()
-	if err != nil {
-		return "error computing hash"
-	}
+	if err != nil { return "error computing hash" }
 	// sha256sum output: "hash  filename"
 	if len(out) >= 64 {
 		return string(out[:64])
@@ -300,9 +291,7 @@ func computeSHA256(path string) string {
 func joinStrings(ss []string) string {
 	result := ""
 	for i, s := range ss {
-		if i > 0 {
-			result += ", "
-		}
+		if i > 0 { result += ", " }
 		result += s
 	}
 	return result

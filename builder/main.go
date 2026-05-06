@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/yourusername/lumin-build/builder/tui"
+	"github.com/4LuminOS/OlyntheOS-Build-Scripts/tui"
 )
 
 func main() {
